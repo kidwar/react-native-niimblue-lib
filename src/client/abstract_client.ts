@@ -287,7 +287,7 @@ export abstract class NiimbotAbstractClient extends EventEmitter<ClientEventMap>
    * Checks if the heartbeat timer has been started.
    */
   public isHeartbeatStarted(): boolean {
-    return this.heartbeatTimer === undefined;
+    return this.heartbeatTimer !== undefined;
   }
 
   /**
@@ -316,7 +316,7 @@ export abstract class NiimbotAbstractClient extends EventEmitter<ClientEventMap>
   /**
    * Create a new print task automatically based on detected printer model.
    **/
-  public newPrintTaskAuto(options: PrintOptions): AbstractPrintTask | undefined {
+  public createPrintTask(options: PrintOptions): AbstractPrintTask | undefined {
     const taskName = this.getPrintTaskType();
 
     if (taskName) {

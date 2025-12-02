@@ -1,5 +1,5 @@
-import { EncodedImage } from "../image_encoder";
-import { AbstractPrintTask } from "./AbstractPrintTask";
+import { EncodedImage } from '../image_encoder';
+import { AbstractPrintTask } from './AbstractPrintTask';
 /**
  * @category Print tasks
  */

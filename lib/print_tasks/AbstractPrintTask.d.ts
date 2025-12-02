@@ -7,18 +7,20 @@ import { Abstraction } from "../packets/abstraction";
  */
 export type PrintOptions = {
     /** Printer label type */
-    labelType: LabelType;
+    labelType?: LabelType;
     /** Print density */
-    density: number;
+    density?: number;
     /** How many pages will be printed */
-    totalPages: number;
+    totalPages?: number;
     /** Used in {@link AbstractPrintTask.waitForFinished} where status is received by polling */
-    statusPollIntervalMs: number;
+    statusPollIntervalMs?: number;
     /** Used in {@link AbstractPrintTask.waitForFinished} */
-    statusTimeoutMs: number;
+    statusTimeoutMs?: number;
     /** Used in {@link AbstractPrintTask.printPage} */
-    pageTimeoutMs: number;
+    pageTimeoutMs?: number;
 };
+/** Default print options for print tasks. */
+export declare const PrintOptionsDefaults: PrintOptions;
 /**
  * Different printer models have different print algorithms. Print task defines this algorithm.
  *

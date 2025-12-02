@@ -22,7 +22,23 @@ A React Native library for Bluetooth LE printing with NIIMBOT thermal printers. 
 npm install react-native-niimblue-lib
 ```
 
-> **Note**: All required dependencies (react-native-ble-plx, @shopify/react-native-skia, etc.) will be installed automatically.
+### Install Required Peer Dependencies
+
+**Always required** for Bluetooth connectivity:
+```bash
+npm install react-native-ble-plx
+```
+
+**Optional** - only needed if you use `PrintPage.addText()` for text rendering:
+```bash
+npm install @shopify/react-native-skia
+```
+
+> **Note**: If you only print QR codes, barcodes, or images without text, you don't need Skia.
+>
+> **Alternative**: Instead of using Skia, you can render text to image/pixel data using any method (Canvas, SVG, native views, etc.) and add it via `addPixelData()` or `addImageFromBuffer()`.
+>
+> **Important**: These dependencies have native code and require proper linking/building. They cannot work as transitive dependencies.
 
 ### Expo Setup
 
@@ -45,7 +61,7 @@ If using Expo, add the BLE plugin to your `app.json`:
 }
 ```
 
-Then create a **development build** (Skia does NOT work in Expo Go):
+Then create a **development build**:
 
 ```bash
 npx expo prebuild
@@ -53,6 +69,8 @@ npx expo run:ios
 # or
 npx expo run:android
 ```
+
+> **Note**: If you use `PrintPage.addText()`, Skia requires a development build and does NOT work in Expo Go. However, QR codes, barcodes, and images work fine without Skia.
 
 ### iOS Setup
 
@@ -69,7 +87,7 @@ cd ios && pod install
 <string>Required for Bluetooth device scanning</string>
 ```
 
-3. **Important**: For `@shopify/react-native-skia`, you need an Expo development build or custom native build. Skia does NOT work in Expo Go.
+3. **Note**: If you installed `@shopify/react-native-skia` for text rendering, run `pod install` again after installation.
 
 ### Android Setup
 
@@ -99,7 +117,7 @@ await client.connect(); // Auto-scans and connects to first NIIMBOT device
 // 2. Create print task (auto-detects printer model)
 client.stopHeartbeat();
 client.setPacketInterval(0); // Fast printing
-const task = client.newPrintTaskAuto({
+const task = client.createPrintTask({
   totalPages: 1,
   density: 3,
   labelType: 1,
@@ -117,7 +135,7 @@ page.addText('Hello NIIMBOT!', {
   y: 100,
   fontSize: 24,
   align: 'center',
-  valign: 'middle',
+  vAlign: 'middle',
 });
 
 // 4. Print
@@ -131,6 +149,8 @@ client.startHeartbeat();
 
 ### Text Rendering
 
+**Option 1: Using Skia (requires @shopify/react-native-skia)**
+
 ```typescript
 const page = new PrintPage(384, 200);
 
@@ -140,7 +160,7 @@ page.addText('NIIMBOT PRINTER', {
   y: 50,
   fontSize: 24,
   align: 'center',
-  valign: 'middle',
+  vAlign: 'middle',
 });
 
 // Custom font (user loads Typeface separately)
@@ -157,6 +177,37 @@ page.addText('Custom Font Text', {
 });
 ```
 
+**Option 2: Without Skia - Convert text to image first**
+
+```typescript
+// Example: Using react-native-view-shot to capture text as image
+import { captureRef } from 'react-native-view-shot';
+
+// 1. Render text in a hidden View with ref
+const textRef = useRef();
+
+// 2. Capture as base64
+const uri = await captureRef(textRef, {
+  format: 'png',
+  quality: 1,
+});
+
+// 3. Convert to buffer and add to page
+const response = await fetch(uri);
+const arrayBuffer = await response.arrayBuffer();
+const buffer = new Uint8Array(arrayBuffer);
+
+page.addImageFromBuffer({
+  buffer,
+  x: 192,
+  y: 100,
+  align: 'center',
+  vAlign: 'middle',
+});
+
+// Or use any other method: Canvas, SVG to PNG, native rendering, etc.
+```
+
 ### QR Code
 
 ```typescript
@@ -166,7 +217,7 @@ page.addQR('https://github.com', {
   width: 150,
   height: 150,
   align: 'center',
-  valign: 'middle',
+  vAlign: 'middle',
   ecl: 'M', // Error correction: L, M, Q, H
 });
 ```
@@ -181,7 +232,7 @@ page.addBarcode('123456789012', {
   width: 200,
   height: 60,
   align: 'center',
-  valign: 'middle',
+  vAlign: 'middle',
 });
 ```
 
@@ -199,7 +250,7 @@ page.addImageFromBuffer({
   width: 200,
   height: 150,
   align: 'center',
-  valign: 'middle',
+  vAlign: 'middle',
   threshold: 128, // Grayscale to binary threshold
 });
 ```
@@ -213,7 +264,7 @@ await page.addImageFromUri('https://example.com/logo.png', {
   width: 150,
   height: 150,
   align: 'center',
-  valign: 'middle',
+  vAlign: 'middle',
   threshold: 128,
 });
 ```
@@ -228,7 +279,7 @@ const heartPixels = [
   // ... (1 = black, 0 = white)
 ];
 
-page.addImage({
+page.addPixelData({
   data: heartPixels,
   imageWidth: 16,
   imageHeight: 11,
@@ -237,7 +288,7 @@ page.addImage({
   width: 128, // Scaled width
   height: 88,
   align: 'center',
-  valign: 'middle',
+  vAlign: 'middle',
 });
 ```
 
@@ -257,7 +308,7 @@ page.addLine({
 
 ```typescript
 const page = new PrintPage(384, 200);
-page.addQR('Preview Test', { x: 192, y: 100, align: 'center', valign: 'middle' });
+page.addQR('Preview Test', { x: 192, y: 100, align: 'center', vAlign: 'middle' });
 
 // Generate base64 PNG
 const base64Uri = await page.toPreviewImage();
@@ -273,8 +324,8 @@ const base64Uri = await page.toPreviewImage();
 - `connect(device?: Device)`: Connect to printer (auto-scan or specific device)
 - `disconnect()`: Disconnect from printer
 - `listDevices(scanDurationMs: number)`: Scan for available printers
-- `getConnectedDevices()`: Get already connected devices
-- `newPrintTaskAuto(options: PrintOptions)`: Create print task with auto-detection
+- `listConnectedDevices()`: List already connected devices
+- `createPrintTask(options: PrintOptions)`: Create print task with auto-detection
 - `setPacketInterval(ms: number)`: Set delay between packets (0 = fastest)
 - `startHeartbeat()` / `stopHeartbeat()`: Control heartbeat
 
@@ -291,20 +342,66 @@ new PrintPage(width: number, height: number)
 - `addText(text: string, options: TextOptions): void`
 - `addQR(text: string, options: QROptions): void`
 - `addBarcode(text: string, options: BarcodeOptions): void`
-- `addImage(options: ImageOptions): void`
+- `addPixelData(options: ImageOptions): void`
 - `addImageFromBuffer(options: ImageFromBufferOptions): void`
 - `addImageFromUri(uri: string, options: ImageFromBufferOptions): Promise<void>`
 - `addLine(options: LineOptions): void`
 - `toEncodedImage(): EncodedImage` - Convert to printer format
 - `toPreviewImage(): Promise<string>` - Generate base64 PNG preview
 
-### Common Options
+### Type Definitions
 
+#### PrintOptions
+- `totalPages?: number` - Number of pages to print
+- `density?: number` - Print density (1-5, default: 3, higher = darker)
+- `labelType?: number` - Label type identifier (printer-specific)
+- `statusPollIntervalMs?: number` - Status polling interval in ms (default: 100)
+- `statusTimeoutMs?: number` - Status check timeout in ms (default: 8000)
+- `pageTimeoutMs?: number` - Timeout for printing each page in ms
+
+#### PrintElementOptions (Base)
 All positioning options support:
-- `x`, `y`: Position in pixels
-- `width`, `height`: Optional size (auto-scales if only one provided)
-- `align`: `'left' | 'center' | 'right'`
-- `valign`: `'top' | 'middle' | 'bottom'`
+- `x: number` - X coordinate in pixels
+- `y: number` - Y coordinate in pixels
+- `width?: number` - Optional width (auto-scales if only one dimension provided)
+- `height?: number` - Optional height (auto-scales if only one dimension provided)
+- `align?: 'left' | 'center' | 'right'` - Horizontal alignment relative to x coordinate
+- `vAlign?: 'top' | 'middle' | 'bottom'` - Vertical alignment relative to y coordinate
+
+#### TextOptions
+Extends `PrintElementOptions` with:
+- `fontSize?: number` - Font size in pixels (default: 12)
+- `typeface?: SkTypeface` - Custom Skia typeface (optional, uses system font if not provided)
+
+#### QROptions
+Extends `PrintElementOptions` with:
+- `ecl?: 'L' | 'M' | 'Q' | 'H'` - Error correction level (default: 'M')
+  - L: Low (~7% correction)
+  - M: Medium (~15% correction)
+  - Q: Quartile (~25% correction)
+  - H: High (~30% correction)
+
+#### BarcodeOptions
+Extends `PrintElementOptions` with:
+- `encoding?: 'EAN13' | 'CODE128'` - Barcode encoding format (default: 'EAN13')
+
+#### ImageOptions
+Extends `PrintElementOptions` with:
+- `data: number[]` - 1D array of pixel data (1 = black, 0 = white)
+- `imageWidth: number` - Original image width in pixels
+- `imageHeight: number` - Original image height in pixels
+
+#### ImageFromBufferOptions
+Extends `PrintElementOptions` with:
+- `buffer: Uint8Array` - Image file buffer (supports PNG/JPG/BMP formats)
+- `threshold?: number` - Grayscale to binary conversion threshold (0-255, default: 128, lower = darker)
+
+#### LineOptions
+- `x: number` - Start X coordinate in pixels
+- `y: number` - Start Y coordinate in pixels
+- `endX: number` - End X coordinate in pixels
+- `endY: number` - End Y coordinate in pixels
+- `thickness?: number` - Line thickness in pixels (default: 1)
 
 ## 🎯 Alignment System
 
@@ -316,7 +413,7 @@ page.addText('Centered', {
   x: 192,    // Reference X
   y: 100,    // Reference Y
   align: 'center',   // Text center aligns to x
-  valign: 'middle',  // Text middle aligns to y
+  vAlign: 'middle',  // Text middle aligns to y
 });
 
 // Right-bottom align at position (350, 180)
@@ -324,24 +421,48 @@ page.addText('Corner', {
   x: 350,
   y: 180,
   align: 'right',   // Right edge at x=350
-  valign: 'bottom', // Bottom edge at y=180
+  vAlign: 'bottom', // Bottom edge at y=180
 });
 ```
 
 ## 🐛 Troubleshooting
 
-### Text Rendering Issues
-- **Problem**: Font not loading or crashes
-- **Solution**: Users should load `Typeface` externally with proper error handling, then pass to `addText()`
+### Bluetooth Connection Issues
+- **Problem**: Cannot find or connect to printer
+- **Solution**: 
+  - Ensure Bluetooth is enabled on your device
+  - Make sure printer is powered on and in pairing mode
+  - Check that all required permissions are granted (Bluetooth, Location on Android)
+  - Try `listDevices()` to scan for available printers
 
-### BMP Images Appear Flipped
-- **Fixed**: Library automatically handles BMP bottom-up format
+### Text Not Rendering
+- **Problem**: Text appears blank or crashes
+- **Solution**: 
+  - If using `addText()`, make sure `@shopify/react-native-skia` is installed
+  - Use Expo development build (not Expo Go) when using Skia
+  - Alternatively, use `addImageFromBuffer()` with pre-rendered text images
 
-### Empty Text Not Rendering
-- **Fixed**: Library checks for empty/whitespace text and skips rendering
+### Print Quality Issues
+- **Problem**: Print is too light or too dark
+- **Solution**: Adjust the `density` parameter (1-5, default 3) in `createPrintTask()`
 
-### Division by Zero Errors
-- **Fixed**: All dimensions guaranteed to be at least 1px
+### Image Not Printing Correctly
+- **Problem**: Image appears distorted or incorrect colors
+- **Solution**: 
+  - Ensure image dimensions are multiples of 8 pixels for width
+  - Adjust `threshold` parameter (default 128) in `addImageFromBuffer()`
+  - Images are converted to black & white - use high contrast images
+
+### Android Crash on Disconnect
+- **Problem**: App crashes when disconnecting from printer on Android
+- **Solution**: This is a known issue with `react-native-ble-plx`. See workaround: https://github.com/dotintent/react-native-ble-plx/issues/1303#issuecomment-3367559459
+
+### Build Errors
+- **Problem**: Native module errors during build
+- **Solution**:
+  - Run `pod install` in iOS directory after installing dependencies
+  - For Android, sync gradle after adding dependencies
+  - Clean build: `cd ios && rm -rf Pods && pod install` or `cd android && ./gradlew clean`
 
 ## 🔄 Migration from Web Version
 
@@ -349,7 +470,7 @@ Key changes from `niimbluelib` web version:
 
 1. **No Canvas API** - Use `PrintPage` class instead
 2. **Skia for Text** - Requires `@shopify/react-native-skia` and Expo dev build
-3. **Auto Print Tasks** - Use `newPrintTaskAuto()` instead of manual model selection
+3. **Auto Print Tasks** - Use `createPrintTask()` instead of manual model selection
 4. **Sync Text Rendering** - `addText()` is now synchronous (load fonts externally)
 5. **Buffer Polyfill** - Uses `buffer` package for image decoding
 

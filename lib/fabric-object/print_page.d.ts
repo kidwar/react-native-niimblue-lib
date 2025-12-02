@@ -5,7 +5,7 @@ export interface PrintElementOptions {
     width?: number;
     height?: number;
     align?: 'left' | 'center' | 'right';
-    valign?: 'top' | 'middle' | 'bottom';
+    vAlign?: 'top' | 'middle' | 'bottom';
 }
 export interface TextOptions extends PrintElementOptions {
     fontSize?: number;
@@ -72,9 +72,9 @@ export declare class PrintPage {
      */
     addLine(options: LineOptions): void;
     /**
-     * Add image to the page
+     * Add pixel data to the page
      */
-    addImage(options: ImageOptions): void;
+    addPixelData(options: ImageOptions): void;
     /**
      * Add image from buffer (PNG/JPG/BMP)
      */
@@ -88,7 +88,7 @@ export declare class PrintPage {
      */
     private calculateX;
     /**
-     * Calculate Y position based on valign
+     * Calculate Y position based on vAlign
      */
     private calculateY;
     /**

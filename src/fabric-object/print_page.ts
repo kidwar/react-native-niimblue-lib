@@ -18,7 +18,7 @@ export interface PrintElementOptions {
   width?: number;
   height?: number;
   align?: 'left' | 'center' | 'right';
-  valign?: 'top' | 'middle' | 'bottom';
+  vAlign?: 'top' | 'middle' | 'bottom';
 }
 
 export interface TextOptions extends PrintElementOptions {
@@ -146,7 +146,7 @@ export class PrintPage {
 
     // Calculate position based on SCALED dimensions for proper alignment
     const x = Math.floor(this.calculateX(options.x, scaledWidth, options.align));
-    const y = Math.floor(this.calculateY(options.y, scaledHeight, options.valign));
+    const y = Math.floor(this.calculateY(options.y, scaledHeight, options.vAlign));
 
     // Create temporary surface to render text at natural size
     const surface = Skia.Surface.Make(
@@ -227,7 +227,7 @@ export class PrintPage {
     }
 
     const x = Math.floor(this.calculateX(options.x, scaledWidth, options.align));
-    const y = Math.floor(this.calculateY(options.y, scaledHeight, options.valign));
+    const y = Math.floor(this.calculateY(options.y, scaledHeight, options.vAlign));
 
     for (let row = 0; row < scaledHeight; row++) {
       for (let col = 0; col < scaledWidth; col++) {
@@ -275,7 +275,7 @@ export class PrintPage {
     }
 
     const x = Math.floor(this.calculateX(options.x, scaledWidth, options.align));
-    const y = Math.floor(this.calculateY(options.y, scaledHeight, options.valign));
+    const y = Math.floor(this.calculateY(options.y, scaledHeight, options.vAlign));
 
     for (let row = 0; row < scaledHeight; row++) {
       for (let col = 0; col < scaledWidth; col++) {
@@ -347,9 +347,9 @@ export class PrintPage {
   }
 
   /**
-   * Add image to the page
+   * Add pixel data to the page
    */
-  addImage(options: ImageOptions): void {
+  addPixelData(options: ImageOptions): void {
     const { data, imageWidth, imageHeight } = options;
 
     let scaledWidth = imageWidth;
@@ -367,7 +367,7 @@ export class PrintPage {
     }
 
     const x = Math.floor(this.calculateX(options.x, scaledWidth, options.align));
-    const y = Math.floor(this.calculateY(options.y, scaledHeight, options.valign));
+    const y = Math.floor(this.calculateY(options.y, scaledHeight, options.vAlign));
 
     for (let row = 0; row < scaledHeight; row++) {
       for (let col = 0; col < scaledWidth; col++) {
@@ -441,8 +441,8 @@ export class PrintPage {
       pixelData.push(gray < threshold ? 1 : 0); // 1 = black, 0 = white
     }
 
-    // Call addImage with the decoded data
-    this.addImage({
+    // Call addPixelData with the decoded data
+    this.addPixelData({
       data: pixelData,
       imageWidth: decoded.width,
       imageHeight: decoded.height,
@@ -451,7 +451,7 @@ export class PrintPage {
       width: options.width,
       height: options.height,
       align: options.align,
-      valign: options.valign,
+      vAlign: options.vAlign,
     });
   }
 
@@ -487,14 +487,14 @@ export class PrintPage {
   }
 
   /**
-   * Calculate Y position based on valign
+   * Calculate Y position based on vAlign
    */
   private calculateY(
     y: number,
     elementHeight: number,
-    valign?: string,
+    vAlign?: string,
   ): number {
-    switch (valign) {
+    switch (vAlign) {
       case 'middle':
         return y - Math.floor(elementHeight / 2);
       case 'bottom':

@@ -1,0 +1,30 @@
+# Dependencies (users will install their own)
+node_modules/
+
+# Development files
+example/
+tsconfig.json
+.eslintrc.js
+
+# Source files (only ship compiled lib/)
+src/
+
+# Git
+.git/
+.gitignore
+.github/
+
+# Testing
+__tests__/
+*.test.ts
+*.spec.ts
+
+# Build artifacts
+*.tgz
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store

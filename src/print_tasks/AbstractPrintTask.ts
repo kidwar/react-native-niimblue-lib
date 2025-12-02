@@ -8,26 +8,26 @@ import { Abstraction } from "../packets/abstraction";
  */
 export type PrintOptions = {
   /** Printer label type */
-  labelType: LabelType;
+  labelType?: LabelType;
 
   /** Print density */
-  density: number;
+  density?: number;
 
   /** How many pages will be printed */
-  totalPages: number;
+  totalPages?: number;
 
   /** Used in {@link AbstractPrintTask.waitForFinished} where status is received by polling */
-  statusPollIntervalMs: number;
+  statusPollIntervalMs?: number;
 
   /** Used in {@link AbstractPrintTask.waitForFinished} */
-  statusTimeoutMs: number;
+  statusTimeoutMs?: number;
 
   /** Used in {@link AbstractPrintTask.printPage} */
-  pageTimeoutMs: number;
+  pageTimeoutMs?: number;
 };
 
 /** Default print options for print tasks. */
-const printOptionsDefaults: PrintOptions = {
+export const PrintOptionsDefaults: PrintOptions = {
   labelType: LabelType.WithGaps,
   density: 2,
   totalPages: 1,
@@ -70,7 +70,7 @@ export abstract class AbstractPrintTask {
     this.pagesPrinted = 0;
 
     this.printOptions = {
-      ...printOptionsDefaults,
+      ...PrintOptionsDefaults,
       ...printOptions,
     };
   }

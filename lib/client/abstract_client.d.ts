@@ -120,7 +120,7 @@ export declare abstract class NiimbotAbstractClient extends EventEmitter<ClientE
     /**
      * Create a new print task automatically based on detected printer model.
      **/
-    newPrintTaskAuto(options: PrintOptions): AbstractPrintTask | undefined;
+    createPrintTask(options: PrintOptions): AbstractPrintTask | undefined;
     /**
      * Set the interval between packets in milliseconds.
      */

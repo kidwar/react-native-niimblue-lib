@@ -1,6 +1,6 @@
 import { EncodedImage } from "../image_encoder";
 import { PacketGenerator } from "../packets";
-import { AbstractPrintTask } from "./AbstractPrintTask";
+import { AbstractPrintTask, PrintOptionsDefaults } from "./AbstractPrintTask";
 
 /**
  * @category Print tasks
@@ -8,8 +8,8 @@ import { AbstractPrintTask } from "./AbstractPrintTask";
 export class OldD11PrintTask extends AbstractPrintTask {
   override printInit(): Promise<void> {
     return this.abstraction.sendAll([
-      PacketGenerator.setDensity(this.printOptions.density),
-      PacketGenerator.setLabelType(this.printOptions.labelType),
+      PacketGenerator.setDensity(this.printOptions.density ?? PrintOptionsDefaults.density!),
+      PacketGenerator.setLabelType(this.printOptions.labelType ?? PrintOptionsDefaults.labelType!),
       PacketGenerator.printStart1b(),
     ]);
   }

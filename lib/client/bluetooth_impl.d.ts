@@ -25,7 +25,7 @@ export declare class NiimbotBluetoothClient extends NiimbotAbstractClient {
     setServiceUuidFilter(ids: string[]): void;
     setOnDisconnect(callback: () => void): void;
     listDevices(scanDurationMs?: number): Promise<Device[]>;
-    getConnectedDevices(): Promise<Device[]>;
+    listConnectedDevices(): Promise<Device[]>;
     connect(device?: Device): Promise<ConnectionInfo>;
     private connectToDevice;
     isConnected(): boolean;

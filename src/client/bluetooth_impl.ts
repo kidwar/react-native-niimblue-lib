@@ -87,7 +87,7 @@ export class NiimbotBluetoothClient extends NiimbotAbstractClient {
     });
   }
 
-  public async getConnectedDevices(): Promise<Device[]> {
+  public async listConnectedDevices(): Promise<Device[]> {
     const connectedDevices = await this.bleManager.connectedDevices(this.serviceUuidFilter);
     // Filter by name prefixes
     return connectedDevices.filter(device =>
@@ -199,7 +199,7 @@ export class NiimbotBluetoothClient extends NiimbotAbstractClient {
       (error, char) => {
         if (!this.device || !this.device.isConnected) return; // Disconnected
         if (error) {
-          if (error.message?.includes('cancel') || error.message?.includes('Cancel') || error.message?.includes('disconnected')) {
+          if (error.message?.includes('cancel') || error.message?.includes('Cancel') || error.message?.includes('disconnected') || error.message?.includes('not connected')) {
             return; // Ignore cancellation and disconnect errors
           }
           console.error('Monitor error:', error);
@@ -243,7 +243,7 @@ export class NiimbotBluetoothClient extends NiimbotAbstractClient {
       try {
         await this.device.cancelConnection();
       } catch (e) {
-        if (e instanceof Error && (e.message?.includes('cancelled') || e.message?.includes('Cancelled'))) {
+        if (e instanceof Error && (e.message?.includes('cancelled') || e.message?.includes('Cancelled') || e.message?.includes('disconnected') || e.message?.includes('not connected'))) {
           return; // Ignore cancellation errors
         }
         console.error('Error canceling connection:', e);

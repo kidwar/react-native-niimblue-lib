@@ -1,6 +1,6 @@
-import { EncodedImage } from "../image_encoder";
-import { PacketGenerator } from "../packets";
-import { AbstractPrintTask } from "./AbstractPrintTask";
+import { EncodedImage } from '../image_encoder';
+import { PacketGenerator } from '../packets';
+import { AbstractPrintTask, PrintOptionsDefaults } from './AbstractPrintTask';
 
 /**
  * @category Print tasks
@@ -8,13 +8,20 @@ import { AbstractPrintTask } from "./AbstractPrintTask";
 export class B21V1PrintTask extends AbstractPrintTask {
   override printInit(): Promise<void> {
     return this.abstraction.sendAll([
-      PacketGenerator.setDensity(this.printOptions.density),
-      PacketGenerator.setLabelType(this.printOptions.labelType),
+      PacketGenerator.setDensity(
+        this.printOptions.density ?? PrintOptionsDefaults.density!,
+      ),
+      PacketGenerator.setLabelType(
+        this.printOptions.labelType ?? PrintOptionsDefaults.labelType!,
+      ),
       PacketGenerator.printStart1b(),
     ]);
   }
 
-  override async printPage(image: EncodedImage, quantity?: number): Promise<void> {
+  override async printPage(
+    image: EncodedImage,
+    quantity?: number,
+  ): Promise<void> {
     this.checkAddPage(quantity ?? 1);
 
     for (let i = 0; i < (quantity ?? 1); i++) {
@@ -24,22 +31,29 @@ export class B21V1PrintTask extends AbstractPrintTask {
           PacketGenerator.pageStart(),
           PacketGenerator.setPageSize4b(image.rows, image.cols),
           ...PacketGenerator.writeImageData(image, {
-            countsMode: "total",
+            countsMode: 'total',
             enableCheckLine: true,
             printheadPixels: this.printheadPixels(),
           }),
           PacketGenerator.pageEnd(),
         ],
-        this.printOptions.pageTimeoutMs
+        this.printOptions.pageTimeoutMs,
       );
     }
   }
 
   override waitForFinished(): Promise<void> {
-    this.abstraction.setPacketTimeout(this.printOptions.statusTimeoutMs);
+    this.abstraction.setPacketTimeout(
+      this.printOptions.statusTimeoutMs ??
+        PrintOptionsDefaults.statusTimeoutMs!,
+    );
 
     return this.abstraction
-      .waitUntilPrintFinishedByPrintEndPoll(this.printOptions.totalPages, this.printOptions.statusPollIntervalMs)
+      .waitUntilPrintFinishedByPrintEndPoll(
+        this.printOptions.totalPages ?? PrintOptionsDefaults.totalPages!,
+        this.printOptions.statusPollIntervalMs ??
+          PrintOptionsDefaults.statusPollIntervalMs!,
+      )
       .finally(() => this.abstraction.setDefaultPacketTimeout());
   }
 }
