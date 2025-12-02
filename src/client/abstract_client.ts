@@ -316,7 +316,7 @@ export abstract class NiimbotAbstractClient extends EventEmitter<ClientEventMap>
   /**
    * Create a new print task automatically based on detected printer model.
    **/
-  public createPrintTask(options: PrintOptions): AbstractPrintTask | undefined {
+  public createPrintTask(options?: PrintOptions): AbstractPrintTask | undefined {
     const taskName = this.getPrintTaskType();
 
     if (taskName) {
