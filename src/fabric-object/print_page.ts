@@ -120,10 +120,10 @@ export class PrintPage {
     
     // Measure text to get natural dimensions
     const measureText = font.measureText(text);
+    const metrics = font.getMetrics();
     // Ensure dimensions are at least 1px to avoid division by zero
     const naturalWidth = Math.max(1, Math.ceil(measureText.width));
-    const naturalHeight = Math.max(1, Math.ceil(measureText.height));
-    const metrics = font.getMetrics();
+    const naturalHeight = Math.max(1, Math.ceil(metrics.descent - metrics.ascent));
 
     // Calculate scaled dimensions (same logic as addQR/addBarcode/addImage)
     let scaledWidth = naturalWidth;
