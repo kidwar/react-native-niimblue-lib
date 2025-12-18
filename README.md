@@ -128,7 +128,7 @@ if (!task) {
 }
 
 // 3. Build page content
-const page = new PrintPage(384, 200); // width x height in pixels
+const page = new PrintPage(400, 240); // width x height in pixels
 
 page.addText('Hello NIIMBOT!', {
   x: 192,
@@ -147,12 +147,38 @@ client.startHeartbeat();
 
 ## 📖 Usage Examples
 
+### Page Orientation
+
+Use `orientation` parameter to automatically rotate all content for landscape printing:
+
+```typescript
+// Portrait mode (default) - for vertical labels
+const portraitPage = new PrintPage(400, 240, 'portrait');
+portraitPage.addText('Product Name', { x: 200, y: 120 });
+
+// Landscape mode - for horizontal labels on vertical paper
+// Dimensions are AUTO-SWAPPED: 240x400 becomes 400x240 canvas + 90° rotation
+const landscapePage = new PrintPage(240, 400, 'landscape');
+landscapePage.addText('Product Name', { 
+  x: 200, // Same coordinates work!
+  y: 120, // Canvas is 400x240 (swapped) + rotated 90°
+});
+```
+
+**How it works:**
+- Physical paper: 240px width × 400px height (vertical)
+- `new PrintPage(240, 400, 'landscape')`:
+  - ✅ Canvas dimensions: **400×240** (auto-swapped)
+  - ✅ Content rotated: **90°** clockwise
+  - ✅ Result: Horizontal content on vertical paper
+  - ✅ Same coordinates as `new PrintPage(400, 240, 'portrait')`
+
 ### Text Rendering
 
 **Option 1: Using Skia (requires @shopify/react-native-skia)**
 
 ```typescript
-const page = new PrintPage(384, 200);
+const page = new PrintPage(400, 240);
 
 // Simple text with default font
 page.addText('NIIMBOT PRINTER', {
@@ -163,14 +189,36 @@ page.addText('NIIMBOT PRINTER', {
   vAlign: 'middle',
 });
 
+// Bold text with manual rotation
+import { Skia, FontStyle } from '@shopify/react-native-skia';
+page.addText('Rotated Text', {
+  x: 192,
+  y: 100,
+  fontSize: 20,
+  fontStyle: FontStyle.Bold,
+  align: 'center',
+  vAlign: 'middle',
+  rotate: 45, // Additional rotation (on top of page orientation)
+});
+
+// Custom font style
+page.addText('Heavy Text', {
+  x: 192,
+  y: 140,
+  fontSize: 18,
+  fontStyle: Skia.FontStyle({ weight: 800 }), // Custom weight
+  align: 'center',
+  vAlign: 'middle',
+  rotate: -15, // Rotate 15 degrees counter-clockwise
+});
+
 // Custom font (user loads Typeface separately)
-import { Skia } from '@shopify/react-native-skia';
 const fontData = await Skia.Data.fromURI('file://path/to/font.ttf');
 const customTypeface = Skia.Typeface.MakeFreeTypeFaceFromData(fontData);
 
 page.addText('Custom Font Text', {
   x: 100,
-  y: 100,
+  y: 180,
   fontSize: 16,
   typeface: customTypeface, // Optional
   align: 'left',
@@ -219,6 +267,7 @@ page.addQR('https://github.com', {
   align: 'center',
   vAlign: 'middle',
   ecl: 'M', // Error correction: L, M, Q, H
+  rotate: 90, // Optional: rotate 90 degrees
 });
 ```
 
@@ -233,6 +282,7 @@ page.addBarcode('123456789012', {
   height: 60,
   align: 'center',
   vAlign: 'middle',
+  rotate: 180, // Optional: rotate 180 degrees
 });
 ```
 
@@ -252,6 +302,7 @@ page.addImageFromBuffer({
   align: 'center',
   vAlign: 'middle',
   threshold: 128, // Grayscale to binary threshold
+  rotate: 270, // Optional: rotate 270 degrees
 });
 ```
 
@@ -289,6 +340,7 @@ page.addPixelData({
   height: 88,
   align: 'center',
   vAlign: 'middle',
+  rotate: 45, // Optional: rotate 45 degrees
 });
 ```
 
@@ -307,7 +359,7 @@ page.addLine({
 ### Print Preview
 
 ```typescript
-const page = new PrintPage(384, 200);
+const page = new PrintPage(400, 240);
 page.addQR('Preview Test', { x: 192, y: 100, align: 'center', vAlign: 'middle' });
 
 // Generate base64 PNG
@@ -334,8 +386,17 @@ const base64Uri = await page.toPreviewImage();
 #### Constructor
 
 ```typescript
-new PrintPage(width: number, height: number)
+new PrintPage(width: number, height: number, orientation?: PageOrientation)
 ```
+
+- `width: number` - Page width in pixels
+- `height: number` - Page height in pixels
+- `orientation?: 'portrait' | 'landscape'` - Page orientation (default: 'portrait')
+  - `'portrait'`: Normal orientation, canvas dimensions = (width, height)
+  - `'landscape'`: **Auto-swaps dimensions** → canvas becomes (height, width) + rotates all content 90° clockwise
+    - Perfect for printing horizontal content on vertical paper
+    - Example: `new PrintPage(240, 400, 'landscape')` → 400×240 canvas with 90° rotation
+    - Use same coordinates as `new PrintPage(400, 240, 'portrait')`
 
 #### Methods
 
@@ -350,6 +411,11 @@ new PrintPage(width: number, height: number)
 - `toPreviewImage(): Promise<string>` - Generate base64 PNG preview
 
 ### Type Definitions
+
+#### PageOrientation
+```typescript
+type PageOrientation = 'portrait' | 'landscape';
+```
 
 #### PrintOptions
 - `totalPages?: number` - Number of pages to print
@@ -367,11 +433,15 @@ All positioning options support:
 - `height?: number` - Optional height (auto-scales if only one dimension provided)
 - `align?: 'left' | 'center' | 'right'` - Horizontal alignment relative to x coordinate
 - `vAlign?: 'top' | 'middle' | 'bottom'` - Vertical alignment relative to y coordinate
+- `rotate?: number` - Rotation angle in degrees (0-360), rotates around element center. This is additional rotation on top of page orientation.
 
 #### TextOptions
 Extends `PrintElementOptions` with:
 - `fontSize?: number` - Font size in pixels (default: 12)
 - `typeface?: SkTypeface` - Custom Skia typeface (optional, uses system font if not provided)
+- `fontStyle?: FontStyle` - Font style for weight, width, and slant (optional, uses Normal if not provided)
+  - Use `Skia.FontStyle()` to create custom styles with weight (100-900), width, and slant
+  - Common presets: `FontStyle.Normal`, `FontStyle.Bold`, `FontStyle.Italic`, `FontStyle.BoldItalic`
 
 #### QROptions
 Extends `PrintElementOptions` with:
@@ -395,6 +465,7 @@ Extends `PrintElementOptions` with:
 Extends `PrintElementOptions` with:
 - `buffer: Uint8Array` - Image file buffer (supports PNG/JPG/BMP formats)
 - `threshold?: number` - Grayscale to binary conversion threshold (0-255, default: 128, lower = darker)
+- Plus all `PrintElementOptions` (x, y, width, height, align, vAlign, rotate)
 
 #### LineOptions
 - `x: number` - Start X coordinate in pixels

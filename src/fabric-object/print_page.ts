@@ -19,11 +19,13 @@ export interface PrintElementOptions {
   height?: number;
   align?: 'left' | 'center' | 'right';
   vAlign?: 'top' | 'middle' | 'bottom';
+  rotate?: number; // Rotation angle in degrees (0-360), rotates around element center
 }
 
 export interface TextOptions extends PrintElementOptions {
   fontSize?: number;
   typeface?: SkTypeface; // Optional custom typeface, defaults to system font if not provided
+  fontStyle?: FontStyle; // Optional font style (weight, width, slant)
 }
 
 export interface QROptions extends PrintElementOptions {
@@ -65,6 +67,8 @@ export interface EncodedImage {
   }[];
 }
 
+export type PageOrientation = 'portrait' | 'landscape';
+
 /**
  * PrintPage class to build printable pages with elements like text, QR, barcode, images.
  * Mimics fabric-object from web version.
@@ -73,13 +77,22 @@ export class PrintPage {
   private pixels: number[][]; // 2D array: 0 = white, 1 = black
   public readonly width: number;
   public readonly height: number;
+  public readonly orientation: PageOrientation;
 
-  constructor(width: number, height: number) {
-    this.width = width;
-    this.height = height;
-    this.pixels = Array(height)
+  constructor(width: number, height: number, orientation: PageOrientation = 'portrait') {
+    // Auto-swap dimensions for landscape mode
+    // This allows using same coordinates as portrait with automatic rotation
+    if (orientation === 'landscape') {
+      this.width = height;
+      this.height = width;
+    } else {
+      this.width = width;
+      this.height = height;
+    }
+    this.orientation = orientation;
+    this.pixels = Array(this.height)
       .fill(null)
-      .map(() => Array(width).fill(0));
+      .map(() => Array(this.width).fill(0));
   }
 
   /**
@@ -105,9 +118,12 @@ export class PrintPage {
         default: 'serif',
       });
       
+      // Use provided fontStyle or default to Normal
+      const fontStyle = options.fontStyle || FontStyle.Normal;
+      
       const fontMgr = Skia.FontMgr.System();
       if (fontMgr) {
-        typeface = fontMgr.matchFamilyStyle(familyName, FontStyle.Normal);
+        typeface = fontMgr.matchFamilyStyle(familyName, fontStyle);
       }
       
       // Final fallback if still null
@@ -175,6 +191,11 @@ export class PrintPage {
     const imgWidth = Math.ceil(naturalWidth);
     const imgHeight = Math.ceil(naturalHeight);
 
+    // Calculate element center for rotation
+    const centerX = x + scaledWidth / 2;
+    const centerY = y + scaledHeight / 2;
+    const rotate = options.rotate || 0;
+
     for (let row = 0; row < scaledHeight; row++) {
       for (let col = 0; col < scaledWidth; col++) {
         // Map scaled coordinates back to natural coordinates
@@ -191,8 +212,16 @@ export class PrintPage {
         const gray = (r + g + b) / 3;
         const isBlack = a > 128 && gray < 128; // Consider alpha and brightness
 
-        const px = x + col;
-        const py = y + row;
+        let px = x + col;
+        let py = y + row;
+        
+        // Apply rotation if specified
+        if (rotate !== 0) {
+          const rotated = this.rotatePoint(px, py, centerX, centerY, rotate);
+          px = Math.round(rotated.x);
+          py = Math.round(rotated.y);
+        }
+        
         if (px >= 0 && px < this.width && py >= 0 && py < this.height) {
           this.pixels[py][px] = isBlack ? 1 : 0;
         }
@@ -229,14 +258,28 @@ export class PrintPage {
     const x = Math.floor(this.calculateX(options.x, scaledWidth, options.align));
     const y = Math.floor(this.calculateY(options.y, scaledHeight, options.vAlign));
 
+    // Calculate element center for rotation
+    const centerX = x + scaledWidth / 2;
+    const centerY = y + scaledHeight / 2;
+    // Apply landscape orientation automatically
+    const rotate = (options.rotate || 0) + (this.orientation === 'landscape' ? 90 : 0);
+
     for (let row = 0; row < scaledHeight; row++) {
       for (let col = 0; col < scaledWidth; col++) {
         const srcRow = Math.floor((row * qrHeight) / scaledHeight);
         const srcCol = Math.floor((col * qrWidth) / scaledWidth);
         const isBlack = qr.isDark(srcRow, srcCol);
 
-        const px = x + col;
-        const py = y + row;
+        let px = x + col;
+        let py = y + row;
+        
+        // Apply rotation if specified
+        if (rotate !== 0) {
+          const rotated = this.rotatePoint(px, py, centerX, centerY, rotate);
+          px = Math.round(rotated.x);
+          py = Math.round(rotated.y);
+        }
+        
         if (px >= 0 && px < this.width && py >= 0 && py < this.height) {
           this.pixels[py][px] = isBlack ? 1 : 0;
         }
@@ -277,14 +320,28 @@ export class PrintPage {
     const x = Math.floor(this.calculateX(options.x, scaledWidth, options.align));
     const y = Math.floor(this.calculateY(options.y, scaledHeight, options.vAlign));
 
+    // Calculate element center for rotation
+    const centerX = x + scaledWidth / 2;
+    const centerY = y + scaledHeight / 2;
+    // Apply landscape orientation automatically
+    const rotate = (options.rotate || 0) + (this.orientation === 'landscape' ? 90 : 0);
+
     for (let row = 0; row < scaledHeight; row++) {
       for (let col = 0; col < scaledWidth; col++) {
         const srcRow = Math.floor((row * barcodeHeight) / scaledHeight);
         const srcCol = Math.floor((col * barcodeWidth) / scaledWidth);
         const isBlack = bandcode[srcCol] === '1';
 
-        const px = x + col;
-        const py = y + row;
+        let px = x + col;
+        let py = y + row;
+        
+        // Apply rotation if specified
+        if (rotate !== 0) {
+          const rotated = this.rotatePoint(px, py, centerX, centerY, rotate);
+          px = Math.round(rotated.x);
+          py = Math.round(rotated.y);
+        }
+        
         if (px >= 0 && px < this.width && py >= 0 && py < this.height) {
           this.pixels[py][px] = isBlack ? 1 : 0;
         }
@@ -369,6 +426,12 @@ export class PrintPage {
     const x = Math.floor(this.calculateX(options.x, scaledWidth, options.align));
     const y = Math.floor(this.calculateY(options.y, scaledHeight, options.vAlign));
 
+    // Calculate element center for rotation
+    const centerX = x + scaledWidth / 2;
+    const centerY = y + scaledHeight / 2;
+    // Apply landscape orientation automatically
+    const rotate = (options.rotate || 0) + (this.orientation === 'landscape' ? 90 : 0);
+
     for (let row = 0; row < scaledHeight; row++) {
       for (let col = 0; col < scaledWidth; col++) {
         const srcRow = Math.floor((row * imageHeight) / scaledHeight);
@@ -376,8 +439,16 @@ export class PrintPage {
         const srcIndex = srcRow * imageWidth + srcCol;
         const isBlack = data[srcIndex] === 1;
 
-        const px = x + col;
-        const py = y + row;
+        let px = x + col;
+        let py = y + row;
+        
+        // Apply rotation if specified
+        if (rotate !== 0) {
+          const rotated = this.rotatePoint(px, py, centerX, centerY, rotate);
+          px = Math.round(rotated.x);
+          py = Math.round(rotated.y);
+        }
+        
         if (px >= 0 && px < this.width && py >= 0 && py < this.height) {
           this.pixels[py][px] = isBlack ? 1 : 0;
         }
@@ -452,6 +523,7 @@ export class PrintPage {
       height: options.height,
       align: options.align,
       vAlign: options.vAlign,
+      rotate: options.rotate,
     });
   }
 
@@ -470,6 +542,41 @@ export class PrintPage {
     }
     const buffer = new Uint8Array(await response.arrayBuffer());
     this.addImageFromBuffer({ ...options, buffer });
+  }
+
+  /**
+   * Rotate a point around a center
+   * @param px Point x coordinate
+   * @param py Point y coordinate
+   * @param cx Center x coordinate
+   * @param cy Center y coordinate
+   * @param angleDegrees Rotation angle in degrees
+   * @returns Rotated point coordinates
+   */
+  private rotatePoint(
+    px: number,
+    py: number,
+    cx: number,
+    cy: number,
+    angleDegrees: number,
+  ): { x: number; y: number } {
+    const angleRadians = (angleDegrees * Math.PI) / 180;
+    const cos = Math.cos(angleRadians);
+    const sin = Math.sin(angleRadians);
+
+    // Translate to origin
+    const translatedX = px - cx;
+    const translatedY = py - cy;
+
+    // Rotate
+    const rotatedX = translatedX * cos - translatedY * sin;
+    const rotatedY = translatedX * sin + translatedY * cos;
+
+    // Translate back
+    return {
+      x: rotatedX + cx,
+      y: rotatedY + cy,
+    };
   }
 
   /**
@@ -508,15 +615,26 @@ export class PrintPage {
    * Convert page to EncodedImage for printing
    */
   toEncodedImage(): EncodedImage {
+    // For landscape mode, we need to rotate the canvas 90° counter-clockwise for printing
+    // because the canvas is already rotated for preview, but printer expects portrait orientation
+    const shouldRotate = this.orientation === 'landscape';
+    const outputWidth = shouldRotate ? this.height : this.width;
+    const outputHeight = shouldRotate ? this.width : this.height;
+
     const rowsData: EncodedImage['rowsData'] = [];
 
-    for (let row = 0; row < this.height; row++) {
-      const rowPixels = this.pixels[row];
+    for (let row = 0; row < outputHeight; row++) {
       let blackCount = 0;
-      const rowData = new Uint8Array(Math.ceil(this.width / 8));
+      const rowData = new Uint8Array(Math.ceil(outputWidth / 8));
 
-      for (let col = 0; col < this.width; col++) {
-        if (rowPixels[col]) {
+      for (let col = 0; col < outputWidth; col++) {
+        // For landscape, rotate 90° counter-clockwise
+        // Output (col, row) ← Canvas (width-1-row, col)
+        // pixels[y][x] so: pixels[col][width-1-row]
+        const srcX = shouldRotate ? (this.width - 1 - row) : col;
+        const srcY = shouldRotate ? col : row;
+        
+        if (this.pixels[srcY][srcX]) {
           blackCount++;
           const byteIndex = Math.floor(col / 8);
           const bitIndex = col % 8;
@@ -558,8 +676,8 @@ export class PrintPage {
     }
 
     return {
-      cols: this.width,
-      rows: this.height,
+      cols: outputWidth,
+      rows: outputHeight,
       rowsData,
     };
   }
@@ -568,12 +686,22 @@ export class PrintPage {
    * Convert page to base64 PNG for preview
    */
   async toPreviewImage(): Promise<string> {
-    // Convert binary pixels to RGBA
-    const rgba = new Uint8Array(this.width * this.height * 4);
-    for (let y = 0; y < this.height; y++) {
-      for (let x = 0; x < this.width; x++) {
-        const idx = (y * this.width + x) * 4;
-        const color = this.pixels[y][x] ? 0 : 255; // Black = 0, White = 255
+    // For landscape mode, rotate canvas to match physical paper orientation
+    // Preview should show 320×480 (portrait) with rotated content, not 480×320
+    const shouldRotate = this.orientation === 'landscape';
+    const outputWidth = shouldRotate ? this.height : this.width;
+    const outputHeight = shouldRotate ? this.width : this.height;
+    
+    const rgba = new Uint8Array(outputWidth * outputHeight * 4);
+    
+    for (let y = 0; y < outputHeight; y++) {
+      for (let x = 0; x < outputWidth; x++) {
+        // For landscape, rotate 90° counter-clockwise to match print output
+        const srcX = shouldRotate ? (this.width - 1 - y) : x;
+        const srcY = shouldRotate ? x : y;
+        
+        const idx = (y * outputWidth + x) * 4;
+        const color = this.pixels[srcY][srcX] ? 0 : 255; // Black = 0, White = 255
         rgba[idx] = color; // R
         rgba[idx + 1] = color; // G
         rgba[idx + 2] = color; // B
@@ -582,7 +710,7 @@ export class PrintPage {
     }
 
     // Encode to PNG
-    const pngBuffer = UPNG.encode([rgba.buffer], this.width, this.height, 0);
+    const pngBuffer = UPNG.encode([rgba.buffer], outputWidth, outputHeight, 0);
     const base64 = Buffer.from(pngBuffer).toString('base64');
     return `data:image/png;base64,${base64}`;
   }

@@ -1,4 +1,4 @@
-import { SkTypeface } from '@shopify/react-native-skia';
+import { FontStyle, SkTypeface } from '@shopify/react-native-skia';
 export interface PrintElementOptions {
     x: number;
     y: number;
@@ -6,10 +6,12 @@ export interface PrintElementOptions {
     height?: number;
     align?: 'left' | 'center' | 'right';
     vAlign?: 'top' | 'middle' | 'bottom';
+    rotate?: number;
 }
 export interface TextOptions extends PrintElementOptions {
     fontSize?: number;
     typeface?: SkTypeface;
+    fontStyle?: FontStyle;
 }
 export interface QROptions extends PrintElementOptions {
     ecl?: 'L' | 'M' | 'Q' | 'H';
@@ -44,6 +46,7 @@ export interface EncodedImage {
         rowData?: Uint8Array;
     }[];
 }
+export type PageOrientation = 'portrait' | 'landscape';
 /**
  * PrintPage class to build printable pages with elements like text, QR, barcode, images.
  * Mimics fabric-object from web version.
@@ -52,7 +55,8 @@ export declare class PrintPage {
     private pixels;
     readonly width: number;
     readonly height: number;
-    constructor(width: number, height: number);
+    readonly orientation: PageOrientation;
+    constructor(width: number, height: number, orientation?: PageOrientation);
     /**
      * Add text to the page
      * @param text - Text to render
@@ -83,6 +87,16 @@ export declare class PrintPage {
      * Add image from URI (async)
      */
     addImageFromUri(uri: string, options: ImageFromBufferOptions): Promise<void>;
+    /**
+     * Rotate a point around a center
+     * @param px Point x coordinate
+     * @param py Point y coordinate
+     * @param cx Center x coordinate
+     * @param cy Center y coordinate
+     * @param angleDegrees Rotation angle in degrees
+     * @returns Rotated point coordinates
+     */
+    private rotatePoint;
     /**
      * Calculate X position based on align
      */
