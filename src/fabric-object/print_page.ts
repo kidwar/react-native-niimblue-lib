@@ -261,8 +261,7 @@ export class PrintPage {
     // Calculate element center for rotation
     const centerX = x + scaledWidth / 2;
     const centerY = y + scaledHeight / 2;
-    // Apply landscape orientation automatically
-    const rotate = (options.rotate || 0) + (this.orientation === 'landscape' ? 90 : 0);
+    const rotate = options.rotate || 0;
 
     for (let row = 0; row < scaledHeight; row++) {
       for (let col = 0; col < scaledWidth; col++) {
@@ -323,8 +322,7 @@ export class PrintPage {
     // Calculate element center for rotation
     const centerX = x + scaledWidth / 2;
     const centerY = y + scaledHeight / 2;
-    // Apply landscape orientation automatically
-    const rotate = (options.rotate || 0) + (this.orientation === 'landscape' ? 90 : 0);
+    const rotate = options.rotate || 0;
 
     for (let row = 0; row < scaledHeight; row++) {
       for (let col = 0; col < scaledWidth; col++) {
@@ -429,8 +427,7 @@ export class PrintPage {
     // Calculate element center for rotation
     const centerX = x + scaledWidth / 2;
     const centerY = y + scaledHeight / 2;
-    // Apply landscape orientation automatically
-    const rotate = (options.rotate || 0) + (this.orientation === 'landscape' ? 90 : 0);
+    const rotate = options.rotate || 0;
 
     for (let row = 0; row < scaledHeight; row++) {
       for (let col = 0; col < scaledWidth; col++) {

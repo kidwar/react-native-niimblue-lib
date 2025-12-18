@@ -295,12 +295,64 @@ function AppContent() {
 
     page.addQR('Landscape', {
       x: 240,
-      y: 280,
+      y: 240,
       width: 80,
       height: 80,
       align: 'center',
       vAlign: 'middle',
     });
+
+    page.addBarcode('987654321098', {
+      encoding: 'CODE128',
+      x: 240,
+      y: 40,
+      align: 'center',
+      vAlign: 'middle',
+      width: 200,
+      height: 60,
+    });
+
+    page.addLine({ x: 40, y: 300, endX: 440, endY: 300, thickness: 2 });
+
+    const heartData = [
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0,
+      0, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+      1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1,
+      1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+      0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
+      1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0,
+    ];
+
+    page.addPixelData({
+      data: heartData,
+      imageWidth: 16,
+      imageHeight: 11,
+      x: 480,
+      y: 0,
+      width: 80,
+      height: 80,
+      align: 'right',
+      vAlign: 'top',
+    });
+
+    await page.addImageFromUri(
+      'https://fastly.picsum.photos/id/1/100/100.jpg?hmac=ZFE9J9JWYx84uJzvjw4GTuagMzN4FAmaKE4XeJDMZTY',
+      {
+        x: 0,
+        y: 0,
+        width: 100,
+        height: 70,
+        align: 'left',
+        vAlign: 'top',
+        threshold: 128,
+        buffer: undefined,
+      },
+    );
 
     await showPreviewAndPrint(page, async () => {
       await executePrintTask(page, 'Landscape page printed');
@@ -521,49 +573,6 @@ const DeviceSelectionModal = ({
         <TouchableOpacity
           style={styles.cancelButton}
           onPress={() => setShowDeviceList(false)}
-        >
-          <Text style={styles.cancelButtonText}>Cancel</Text>
-        </TouchableOpacity>
-      </SafeAreaView>
-    </Modal>
-  );
-};
-
-const DemoMenuModal = ({
-  showDemoMenu,
-  setShowDemoMenu,
-  onSelectDemo,
-  demos,
-}: {
-  showDemoMenu: boolean;
-  setShowDemoMenu: React.Dispatch<React.SetStateAction<boolean>>;
-  onSelectDemo: (handler: () => void) => void;
-  demos: Array<{ label: string; handler: () => void }>;
-}) => {
-  const insets = useSafeAreaInsets();
-  return (
-    <Modal
-      visible={showDemoMenu}
-      animationType="slide"
-      onRequestClose={() => setShowDemoMenu(false)}
-    >
-      <SafeAreaView style={[styles.modalContainer, { paddingTop: insets.top }]}>
-        <Text style={styles.modalTitle}>Select Demo</Text>
-        <FlatList
-          data={demos}
-          keyExtractor={(item, index) => index.toString()}
-          renderItem={({ item }) => (
-            <TouchableOpacity
-              style={styles.demoItem}
-              onPress={() => onSelectDemo(item.handler)}
-            >
-              <Text style={styles.demoLabel}>{item.label}</Text>
-            </TouchableOpacity>
-          )}
-        />
-        <TouchableOpacity
-          style={styles.cancelButton}
-          onPress={() => setShowDemoMenu(false)}
         >
           <Text style={styles.cancelButtonText}>Cancel</Text>
         </TouchableOpacity>
